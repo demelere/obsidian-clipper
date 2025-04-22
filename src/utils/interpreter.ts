@@ -40,12 +40,47 @@ export async function sendToLLM(promptContext: string, content: string, promptVa
 	}
 
 	try {
-		const systemContent = 
-			`You are a helpful assistant. Please respond with one JSON object named \`prompts_responses\` — no explanatory text before or after. Use the keys provided, e.g. \`prompt_1\`, \`prompt_2\`, and fill in the values. Values should be Markdown strings unless otherwise specified. Make your responses concise. For example, your response should look like: {"prompts_responses":{"prompt_1":"tag1, tag2, tag3","prompt_2":"- bullet1\n- bullet 2\n- bullet3"}}`;
-		
-		const promptContent = {	
+		// Modify the system message to include your specific instructions
+		const systemContent = `You are an expert in creating high-quality spaced repetition flashcards.
+
+		Guidelines for creating excellent flashcards:
+		• Be EXTREMELY concise - answers should be 1-2 sentences maximum!
+		• Focus on core concepts, relationships, and techniques rather than trivia or isolated facts
+		• Break complex ideas into smaller, atomic concepts
+		• Ensure each card tests one specific idea (atomic)
+		• Front of card should ask a specific question that prompts recall
+		• Back of card should provide the shortest possible complete answer
+		• CRITICAL: Keep answers as brief as possible while maintaining accuracy - aim for 10-25 words max
+		• When referencing the author or source, use their specific name rather than general phrases
+		• Try to cite the author or the source when discussing something that is not an established concept
+		• The questions should be precise and unambiguously exclude alternative correct answers
+		• The questions should encode ideas from multiple angles
+		• Avoid yes/no questions or binary answers
+		• Avoid unordered lists of items
+		• If quantities are involved, they should be relative, or specify the unit of measure
+
+		CRITICAL: Format each card using this exact structure:
+		START
+		Basic
+		Front: [Question goes here]
+		Back: [Answer goes here]
+		END
+
+		Each card must:
+		1. Begin with START on its own line
+		2. Have "Basic" on the next line
+		3. Have "Front: " followed by the question
+		4. Have "Back: " followed by the answer
+		5. End with END on its own line
+		6. Have a blank line between each card
+
+		Do not include any other text or explanations - ONLY the cards in this format.`;
+
+		// Simplify the prompt content to just request flashcard generation
+		const promptContent = {    
 			prompts: promptVariables.reduce((acc, { key, prompt }) => {
-				acc[key] = prompt;
+				// Replace any user prompt with a simple instruction
+				acc[key] = "Generate 1-5 flashcards from the provided text, following the system guidelines.";
 				return acc;
 			}, {} as { [key: string]: string })
 		};
@@ -248,86 +283,35 @@ function parseLLMResponse(responseContent: string, promptVariables: PromptVariab
 	try {
 		let parsedResponse: LLMResponse;
 		
-		// If responseContent is already an object, convert to string
-		if (typeof responseContent === 'object') {
-			responseContent = JSON.stringify(responseContent);
-		}
-
-		// Helper function to sanitize JSON string
-		const sanitizeJsonString = (str: string) => {
-			// First, normalize all newlines to \n
-			let result = str.replace(/\r\n/g, '\n');
-			
-			// Escape newlines properly
-			result = result.replace(/\n/g, '\\n');
-			
-			// Escape quotes that are part of the content
-			result = result.replace(/(?<!\\)"/g, '\\"');
-			
-			// Then unescape the quotes that are JSON structural elements
-			result = result.replace(/(?<=[{[,:]\s*)\\"/g, '"')
-				.replace(/\\"(?=\s*[}\],:}])/g, '"');
-			
-			return result
-				// Replace curly quotes
-				.replace(/[""]/g, '\\"')
-				// Remove any bad control characters
-				.replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g, '')
-				// Remove any whitespace between quotes and colons
-				.replace(/"\s*:/g, '":')
-				.replace(/:\s*"/g, ':"')
-				// Fix any triple or more backslashes
-				.replace(/\\{3,}/g, '\\\\');
-		};
-
-		// First try to parse the content directly
-		try {
-			const sanitizedContent = sanitizeJsonString(responseContent);
-			debugLog('Interpreter', 'Sanitized content:', sanitizedContent);
-			parsedResponse = JSON.parse(sanitizedContent);
-		} catch (e) {
-			// If direct parsing fails, try to extract and parse the JSON content
-			const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
-			if (!jsonMatch) {
-				throw new Error('No JSON object found in response');
-			}
-
-			// Try parsing with minimal sanitization first
-			try {
-				const minimalSanitized = jsonMatch[0]
-					.replace(/[""]/g, '"')
-					.replace(/\r\n/g, '\\n')
-					.replace(/\n/g, '\\n');
-				parsedResponse = JSON.parse(minimalSanitized);
-			} catch (minimalError) {
-				// If minimal sanitization fails, try full sanitization
-				const sanitizedMatch = sanitizeJsonString(jsonMatch[0]);
-				debugLog('Interpreter', 'Fully sanitized match:', sanitizedMatch);
+		// Check if the response matches Obsidian To Anki format
+		if (responseContent.includes('START') && responseContent.includes('END')) {
+			const responses: { [key: string]: string } = {};
+			promptVariables.forEach(({ key }) => {
+				// Clean up the content and ensure proper formatting
+				const cleanedContent = responseContent
+					.trim()
+					.replace(/\r\n/g, '\n')       // Normalize line endings
+					// Remove trailing whitespace specifically from control lines
+					.replace(/^(START|END|TARGET DECK|Basic|Front:|Back:)\s+$/gm, '$1')
+					.replace(/\n{3,}/g, '\n\n')   // Remove extra blank lines
+					.replace(/[^\S\n]+\n/g, '\n') // Remove trailing spaces from all lines (keeping the newline)
+					.trim(); // Trim again in case the whole content ended with spaces
 				
-				try {
-					parsedResponse = JSON.parse(sanitizedMatch);
-				} catch (fullError) {
-					// Last resort: try to manually rebuild the JSON structure
-					const prompts_responses: { [key: string]: string } = {};
-					
-					// Extract each prompt response separately
-					promptVariables.forEach((variable, index) => {
-						const promptKey = `prompt_${index + 1}`;
-						const promptRegex = new RegExp(`"${promptKey}"\\s*:\\s*"([^]*?)(?:"\\s*,|"\\s*})`, 'g');
-						const match = promptRegex.exec(jsonMatch[0]);
-						if (match) {
-							let content = match[1]
-								.replace(/"/g, '\\"')
-								.replace(/\r\n/g, '\\n')
-								.replace(/\n/g, '\\n');
-							prompts_responses[promptKey] = content;
-						}
-					});
-
-					const rebuiltJson = JSON.stringify({ prompts_responses });
-					debugLog('Interpreter', 'Rebuilt JSON:', rebuiltJson);
-					parsedResponse = JSON.parse(rebuiltJson);
-				}
+				responses[key] = cleanedContent;
+			});
+			parsedResponse = { prompts_responses: responses };
+		} else {
+			// Existing JSON handling as fallback
+			try {
+				const sanitizedContent = sanitizeJsonString(responseContent);
+				parsedResponse = JSON.parse(sanitizedContent);
+			} catch (e) {
+				// If JSON parsing fails, wrap the raw content
+				const responses: { [key: string]: string } = {};
+				promptVariables.forEach(({ key }) => {
+					responses[key] = responseContent;
+				});
+				parsedResponse = { prompts_responses: responses };
 			}
 		}
 
@@ -363,6 +347,24 @@ function parseLLMResponse(responseContent: string, promptVariables: PromptVariab
 		});
 		return { promptResponses: [] };
 	}
+}
+
+function sanitizeJsonString(str: string): string {
+	// Remove any non-JSON content before/after the actual JSON structure
+	const jsonMatch = str.match(/\{[\s\S]*\}/);
+	if (!jsonMatch) return str;
+	
+	return jsonMatch[0]
+		// Fix common quote issues
+		.replace(/[""]/g, '"')
+		// Handle escaped newlines
+		.replace(/\\n/g, '\\n')
+		.replace(/\n/g, '\\n')
+		// Handle escaped quotes
+		.replace(/\\"/g, '"')
+		.replace(/([^\\])"/g, '$1\\"')
+		// Clean up double escapes
+		.replace(/\\\\/g, '\\');
 }
 
 export function collectPromptVariables(template: Template | null): PromptVariable[] {
@@ -647,32 +649,38 @@ export function replacePromptVariables(promptVariables: PromptVariable[], prompt
 	const allInputs = document.querySelectorAll('input, textarea');
 	allInputs.forEach((input) => {
 		if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
-			input.value = input.value.replace(/{{(?:prompt:)?"(.*?)"(\|.*?)?}}/g, (match, promptText, filters) => {
-				const variable = promptVariables.find(v => v.prompt === promptText);
-				if (!variable) return match;
+			input.value = input.value.replace(
+				/{{(?:prompt:)?"([^]*?)"(\|.*?)?}}/g,
+				(match, promptText, filters) => {
+					const variable = promptVariables.find(v => v.prompt === promptText);
+					if (!variable) return match;
 
-				const response = promptResponses.find(r => r.key === variable.key);
-				if (response && response.user_response !== undefined) {
-					let value = response.user_response;
-					
-					// Handle array or object responses
-					if (typeof value === 'object') {
-						try {
-							value = JSON.stringify(value, null, 2);
-						} catch (error) {
-							console.error('Error stringifying object:', error);
-							value = String(value);
+					const response = promptResponses.find(r => r.key === variable.key);
+					if (response && response.user_response !== undefined) {
+						let value = response.user_response;
+						
+						// Preserve formatting for CSV and other structured formats
+						if (typeof value === 'string' && value.includes('\n')) {
+							// Don't JSON.stringify multi-line strings
+							value = value;
+						} else if (typeof value === 'object') {
+							try {
+								value = JSON.stringify(value, null, 2);
+							} catch (error) {
+								console.error('Error stringifying object:', error);
+								value = String(value);
+							}
 						}
-					}
 
-					if (filters) {
-						value = applyFilters(value, filters.slice(1));
+						if (filters) {
+							value = applyFilters(value, filters.slice(1));
+						}
+						
+						return value;
 					}
-					
-					return value;
+					return match;
 				}
-				return match; // Return original if no match found
-			});
+			);
 
 			// Adjust height for noteNameField after updating its value
 			if (input.id === 'note-name-field' && input instanceof HTMLTextAreaElement) {
