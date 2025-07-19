@@ -1089,6 +1089,7 @@ function determineMainAction() {
             mainButton.onclick = () => copyContent();
             // Add direct actions to secondary
             addSecondaryAction(secondaryActions, 'addToObsidian', () => handleClipObsidian());
+            addSecondaryAction(secondaryActions, 'sendToFlashcardApp', () => handleSendToFlashcardApp());
             addSecondaryAction(secondaryActions, 'saveFile', handleSaveToDownloads);
             break;
         case 'saveFile':
@@ -1096,6 +1097,7 @@ function determineMainAction() {
             mainButton.onclick = () => handleSaveToDownloads();
             // Add direct actions to secondary
             addSecondaryAction(secondaryActions, 'addToObsidian', () => handleClipObsidian());
+            addSecondaryAction(secondaryActions, 'sendToFlashcardApp', () => handleSendToFlashcardApp());
             addSecondaryAction(secondaryActions, 'copyToClipboard', copyContent);
             break;
         default: // 'addToObsidian'
@@ -1103,7 +1105,60 @@ function determineMainAction() {
             mainButton.onclick = () => handleClipObsidian();
             // Add direct actions to secondary
             addSecondaryAction(secondaryActions, 'copyToClipboard', copyContent);
+            addSecondaryAction(secondaryActions, 'sendToFlashcardApp', () => handleSendToFlashcardApp());
             addSecondaryAction(secondaryActions, 'saveFile', handleSaveToDownloads);
+    }
+}
+
+// New function specifically for Flashcard App operations
+async function handleSendToFlashcardApp(): Promise<void> {
+    if (!currentTemplate) return;
+
+    const noteContentField = document.getElementById('note-content-field') as HTMLTextAreaElement;
+    const noteNameField = document.getElementById('note-name-field') as HTMLInputElement;
+    const interpretBtn = document.getElementById('interpret-btn') as HTMLButtonElement;
+
+    if (!noteContentField) {
+        showError('Some required fields are missing. Please try reloading the extension.');
+        return;
+    }
+
+    try {
+        // Handle interpreter if needed
+        if (generalSettings.interpreterEnabled && interpretBtn && collectPromptVariables(currentTemplate).length > 0) {
+            if (interpretBtn.classList.contains('processing')) {
+                await waitForInterpreter(interpretBtn);
+            } else if (!interpretBtn.classList.contains('done')) {
+                interpretBtn.click();
+                await waitForInterpreter(interpretBtn);
+            }
+        }
+
+        // Gather content
+        const properties = Array.from(document.querySelectorAll('.metadata-property input')).map(input => {
+            const inputElement = input as HTMLInputElement;
+            return {
+                id: inputElement.dataset.id || Date.now().toString() + Math.random().toString(36).slice(2, 11),
+                name: inputElement.id,
+                value: inputElement.type === 'checkbox' ? inputElement.checked : inputElement.value
+            };
+        }) as Property[];
+
+        const frontmatter = await generateFrontmatter(properties);
+        const fileContent = frontmatter + noteContentField.value;
+        const noteName = noteNameField?.value || 'untitled';
+
+        // Send to Flashcard App
+        await sendToFlashcardApp(fileContent, noteName);
+        await incrementStat('addToObsidian', '', '');
+
+        if (!isSidePanel) {
+            setTimeout(() => window.close(), 500);
+        }
+    } catch (error) {
+        console.error('Error in handleSendToFlashcardApp:', error);
+        showError('failedToSendToFlashcardApp');
+        throw error;
     }
 }
 
@@ -1191,6 +1246,7 @@ function getActionIcon(actionType: string): string {
         case 'copyToClipboard': return 'copy';
         case 'saveFile': return 'file-down';
         case 'addToObsidian': return 'pen-line';
+        case 'sendToFlashcardApp': return 'book-open';
         default: return 'plus';
     }
 }
@@ -1209,6 +1265,47 @@ async function copyContent() {
     const frontmatter = await generateFrontmatter(properties);
     const fileContent = frontmatter + noteContentField.value;
     await copyToClipboard(fileContent);
+}
+
+async function sendToFlashcardApp(content: string, noteName: string): Promise<void> {
+    try {
+        console.log('Sending to flashcard app:', { noteName, contentLength: content.length });
+        
+        const response = await fetch('http://localhost:34567/api/ingest', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: content,
+                noteName: noteName
+            })
+        });
+
+        console.log('Flashcard app response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Flashcard app error response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
+        }
+
+        // Change the main button text temporarily to show success
+        const clipButton = document.getElementById('clip-btn');
+        if (clipButton) {
+            const originalText = clipButton.textContent || getMessage('addToObsidian');
+            clipButton.textContent = 'Sent!';
+            
+            // Reset the text after 1.5 seconds
+            setTimeout(() => {
+                clipButton.textContent = originalText;
+            }, 1500);
+        }
+    } catch (error) {
+        console.error('Failed to send to flashcard app:', error);
+        showError('failedToSendToFlashcardApp');
+        throw error;
+    }
 }
 
 // Update the resize event listener to use the debounced version
