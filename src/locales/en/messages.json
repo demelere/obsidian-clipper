@@ -20,6 +20,12 @@
 	"addToObsidian": {
 		"message": "Add to Obsidian"
 	},
+	"sendToFlashcardApp": {
+		"message": "Send to Flashcard App"
+	},
+	"failedToSendToFlashcardApp": {
+		"message": "Failed to send to flashcard app. Make sure your flashcard app is running on localhost:34567."
+	},
 	"addVaultPlaceholder": {
 		"message": "Press enter to add a vault"
 	},

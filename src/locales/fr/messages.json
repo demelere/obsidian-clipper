@@ -20,6 +20,9 @@
 	"addToObsidian": {
 		"message": "Ajouter à Obsidian"
 	},
+	"sendToFlashcardApp": {
+		"message": "Envoyer à l'App de Cartes"
+	},
 	"addVaultPlaceholder": {
 		"message": "Appuyez sur entrée pour ajouter un coffre"
 	},
