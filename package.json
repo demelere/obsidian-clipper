@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-clipper",
+	"name": "obsidian-clipper-anki-integration",
 	"version": "0.11.4",
-	"description": "Official web clipper for Obsidian.",
+	"description": "Official web clipper for Obsidian with Anki/Flashcard integration.",
 	"scripts": {
 		"defuddle-dev": "node scripts/set-defuddle-dev.js",
 		"defuddle-prod": "node scripts/set-defuddle-prod.js",
