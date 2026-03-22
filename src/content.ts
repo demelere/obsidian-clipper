@@ -3,6 +3,7 @@ import * as highlighter from './utils/highlighter';
 import { loadSettings, generalSettings } from './utils/storage-utils';
 import Defuddle from 'defuddle';
 import { getDomain } from './utils/string-utils';
+import { extractGoogleAIOverview } from './utils/google-ai-overview';
 
 declare global {
 	interface Window {
@@ -65,6 +66,14 @@ declare global {
 			}
 
 			const extractedContent: { [key: string]: string } = {};
+
+			// Extract Google AI Overview if on a Google search page
+			if (location.hostname.includes('google.com') && location.pathname === '/search') {
+				const aiOverview = extractGoogleAIOverview(document);
+				if (aiOverview) {
+					extractedContent['google_ai_overview'] = aiOverview;
+				}
+			}
 
 			// Process with Defuddle first while we have access to the document
 			const defuddled = new Defuddle(document).parse();

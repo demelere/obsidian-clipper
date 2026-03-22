@@ -35,6 +35,7 @@ The main content variable is `{{content}}`, which contains the article content, 
 | `{{time}}`        | Current date and time                                                                  |
 | `{{url}}`         | Current URL                                                                            |
 | `{{words}}`       | Word count                                                                             |
+| `{{google_ai_overview}}` | Google AI Overview text (only on Google search result pages)                   |
 
 ## Prompt variables
 

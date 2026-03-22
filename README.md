@@ -39,12 +39,39 @@ In no particular order:
 - [ ] Template logic (if/for)
 - [x] Save images locally, [added in Obsidian 1.8.0](https://obsidian.md/changelog/2024-12-18-desktop-v1.8.0/)
 
+## Fork additions
+
+This fork adds the following features on top of the upstream Obsidian Web Clipper:
+
+### Anki/flashcard integration
+
+Send highlights directly to a flashcard app via API. See commits tagged `feat: add send to flashcard app` for details.
+
+### Google AI Overview variable
+
+The `{{google_ai_overview}}` template variable extracts the AI Overview section from Google search result pages. It only activates on `google.com/search` URLs.
+
+The extractor anchors to the "AI Overview" heading text rather than obfuscated class names, so it survives Google's frequent layout changes. See [ADR-001](docs/decisions/001-google-ai-overview-variable.md) for design rationale.
+
+**Anki CSV template example:**
+
+```
+Front,Back
+{{title}},{{google_ai_overview}}
+```
+
 ## Developers
 
 To build the extension:
 
 ```
 npm run build
+```
+
+To run tests:
+
+```
+npm test
 ```
 
 This will create three directories:
