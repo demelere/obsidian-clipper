@@ -26,6 +26,8 @@ export async function saveFile({
 	try {
 		if (mimeType === 'text/markdown' && !fileName.toLowerCase().endsWith('.md')) {
 			fileName = `${fileName}.md`;
+		} else if (mimeType === 'text/csv' && !fileName.toLowerCase().endsWith('.csv')) {
+			fileName = `${fileName}.csv`;
 		}
 
 		const browserType = await detectBrowser();

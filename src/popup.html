@@ -14,22 +14,26 @@
 				</select>
 			</div>
 			<div id="popup-actions">
-				<a href="#" id="show-variables" class="clickable-icon" 
+				<a href="#" id="show-variables" class="clickable-icon"
 					data-i18n-title="showPageVariables">
 					<i data-lucide="ellipsis"></i>
+				</a>
+				<a href="#" id="window-tools-btn" class="clickable-icon"
+					data-i18n-title="windowTools">
+					<i data-lucide="table"></i>
 				</a>
 				<a href="#" id="reader-mode" class="clickable-icon" style="display: none;"
 					data-i18n-title="reader">
 					<i data-lucide="book-open"></i>
 				</a>
-				<a href="#" id="highlighter-mode" class="clickable-icon" 
+				<a href="#" id="highlighter-mode" class="clickable-icon"
 					data-i18n-title="highlightPage">
 					<i data-lucide="highlighter"></i>
 				</a>
-				<a href="#" id="open-settings" class="clickable-icon" 
+				<a href="#" id="open-settings" class="clickable-icon"
 					data-i18n-title="settings">
 					<i data-lucide="settings"></i>
-				</a>		
+				</a>
 			</div>
 		</div>
 		<p class="error-message" style="display: none;"></p>
@@ -74,6 +78,32 @@
 						<a class="share-content clickable-icon" data-i18n-title="share"><i data-lucide="share"></i></a>
 					</div>
 				</div>
+			</div>
+		</div>
+		<div id="window-tools-panel" class="window-tools-panel" style="display: none;">
+			<div class="window-tools-header">
+				<h3 data-i18n="windowTools">Window tools</h3>
+				<span class="close-panel clickable-icon" id="close-window-tools">
+					<i data-lucide="x"></i>
+				</span>
+			</div>
+			<div class="window-tools-section">
+				<h4 data-i18n="exportAiOverviews">Export AI Overviews</h4>
+				<div class="window-tools-group">
+					<label data-i18n="currentTab">Current tab</label>
+					<div class="window-tools-actions">
+						<button id="export-ai-current-download" class="window-tools-btn" data-i18n="downloadCsv">Download CSV</button>
+						<button id="export-ai-current-copy" class="window-tools-btn" data-i18n="copyToClipboard">Copy to clipboard</button>
+					</div>
+				</div>
+				<div class="window-tools-group">
+					<label data-i18n="allTabsInWindow">All tabs in window</label>
+					<div class="window-tools-actions">
+						<button id="export-ai-all-download" class="window-tools-btn" data-i18n="downloadCsv">Download CSV</button>
+						<button id="export-ai-all-copy" class="window-tools-btn" data-i18n="copyToClipboard">Copy to clipboard</button>
+					</div>
+				</div>
+				<div id="window-tools-status" class="window-tools-status"></div>
 			</div>
 		</div>
 		<script type="module" src="popup.js"></script>

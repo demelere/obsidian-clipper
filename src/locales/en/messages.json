@@ -805,5 +805,40 @@
 	},
 	"version": {
 		"message": "Version"
+	},
+	"windowTools": {
+		"message": "Window tools"
+	},
+	"exportAiOverviews": {
+		"message": "Export AI Overviews"
+	},
+	"currentTab": {
+		"message": "Current tab"
+	},
+	"allTabsInWindow": {
+		"message": "All tabs in window"
+	},
+	"downloadCsv": {
+		"message": "Download CSV"
+	},
+	"copyToClipboard": {
+		"message": "Copy to clipboard"
+	},
+	"noAiOverviewFound": {
+		"message": "No AI Overview found"
+	},
+	"exportedRows": {
+		"message": "Exported $count$ rows",
+		"placeholders": {
+			"count": {
+				"content": "$1"
+			}
+		}
+	},
+	"copiedToClipboard": {
+		"message": "Copied to clipboard"
+	},
+	"notGoogleSearch": {
+		"message": "Not a Google search page"
 	}
 }

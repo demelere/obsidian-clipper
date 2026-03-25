@@ -17,6 +17,7 @@ import { initializeInterpreter, handleInterpreterUI, collectPromptVariables } fr
 import { adjustNoteNameHeight } from '../utils/ui-utils';
 import { debugLog } from '../utils/debug';
 import { showVariables, initializeVariablesPanel, updateVariablesPanel } from '../managers/inspect-variables';
+import { initializeWindowTools } from './window-tools';
 import { ensureContentScriptLoaded } from '../utils/content-script-utils';
 import { isBlankPage, isValidUrl } from '../utils/active-tab-manager';
 import { memoizeWithExpiration } from '../utils/memoize';
@@ -495,9 +496,11 @@ async function initializeUI() {
 		});
 	}
 
+	initializeWindowTools();
+
 	if (isSidePanel) {
 		browser.runtime.sendMessage({ action: "sidePanelOpened" });
-		
+
 		window.addEventListener('unload', () => {
 			browser.runtime.sendMessage({ action: "sidePanelClosed" });
 		});

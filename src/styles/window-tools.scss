@@ -1,0 +1,125 @@
+.window-tools-open {
+	.clipper {
+		display: none;
+	}
+	#popup-actions #window-tools-btn {
+		background-color: hsla(var(--color-accent-hsl), 0.075);
+		color: var(--text-accent);
+	}
+}
+
+.window-tools-panel {
+	background-color: var(--background-primary);
+	z-index: 100;
+	overflow-x: hidden;
+	overflow-y: auto;
+	flex-direction: column;
+	padding: var(--popup-padding);
+	gap: 12px;
+
+	&[style*="display: flex"] {
+		display: flex;
+	}
+
+	.close-panel {
+		background-color: transparent;
+		border-radius: var(--radius-s);
+		@media (hover: hover) {
+			&:hover {
+				background-color: var(--background-modifier-hover);
+			}
+		}
+	}
+
+	h3 {
+		margin: 0;
+		padding: 0;
+		border: none;
+		user-select: none;
+		-webkit-user-select: none;
+		font-size: var(--font-ui-medium);
+	}
+
+	h4 {
+		margin: 0;
+		padding: 0;
+		border: none;
+		font-size: var(--font-ui-small);
+		color: var(--text-muted);
+		font-weight: 600;
+	}
+}
+
+.window-tools-header {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--divider-color);
+}
+
+.window-tools-section {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.window-tools-group {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+
+	label {
+		font-size: var(--font-ui-smaller);
+		color: var(--text-normal);
+		font-weight: 500;
+	}
+}
+
+.window-tools-actions {
+	display: flex;
+	flex-direction: row;
+	gap: 6px;
+}
+
+.window-tools-btn {
+	flex: 1;
+	padding: 6px 10px;
+	font-size: var(--font-ui-smaller);
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+
+	@media (hover: hover) {
+		&:hover {
+			background-color: var(--background-modifier-hover);
+		}
+	}
+
+	&:active {
+		background-color: var(--background-modifier-active-hover);
+	}
+
+	&:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+}
+
+.window-tools-status {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	min-height: 1.4em;
+
+	&.is-success {
+		color: var(--text-accent);
+	}
+
+	&.is-error {
+		color: var(--text-error);
+	}
+}
